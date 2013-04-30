@@ -43,14 +43,40 @@
         , title = this.getTitle()
         , content = this.getContent()
 
-      $tip.find('.popover-title')[this.options.html ? 'html' : 'text'](title)
-      $tip.find('.popover-content')[this.options.html ? 'html' : 'text'](content)
+      $tip.find('.' + this.options.titleClass)[this.options.html ? 'html' : 'text'](title)
+      $tip.find('.' + this.options.contentClass)[this.options.html ? 'html' : 'text'](content)
 
       $tip.removeClass('fade top bottom left right bottomRight bottomLeft topRight topLeft leftTop leftBottom rightTop rightBottom in')
     }
+  
+  , changeContent: function (data) {
+      var $tip = this.tip()
+        , title = this.getTitle()
+        , $e = this.$element
+        , content  
+        	
+      content = (typeof data == 'function' ? data.call($e[0]) :  data)
 
+      $tip.find('.' + this.options.contentClass)[this.options.html ? 'html' : 'text'](content)
+
+      this.options.content = data;
+    }
+
+  , changeTitle: function (data) {
+      var $tip = this.tip()
+        , title = this.getTitle()
+        , $e = this.$element
+        , title  
+        	
+      title = (typeof data == 'function' ? data.call($e[0]) :  data)
+
+      $tip.find('.' + this.options.titleClass)[this.options.html ? 'html' : 'text'](title)
+
+      this.options.title = data;
+    }
+  
   , hasContent: function () {
-      return (typeof(this.getTitle())!=undefined && this.getTitle().length>0) || (typeof(this.getContent())!=undefined && this.getContent().length>0)
+      return (typeof(this.getTitle())!="undefined" && this.getTitle().length>0) || (typeof(this.getContent())!="undefined" && this.getContent().length>0)
     }
 
   , getContent: function () {
@@ -187,47 +213,23 @@
         .addClass(placement)
         .addClass('in')
         
+        
+      this.replaceArrow( 0, height, 'top')
+      this.replaceArrow( 0 , width, 'left')
+    	  
       if ( placement.match(/^bottom\B/) ){
     	  $tip.addClass('bottom')
-    	  this.replaceArrow( 0, height, 'top')
     	  this.replaceArrow( pos.left + pos.width/2 - offset.left, width, 'left')
       }else if ( placement.match(/^left\B/) ){
-    	  $tip.addClass('left');
-    	  this.replaceArrow( 0 , width, 'left')
+    	  $tip.addClass('left')
     	  this.replaceArrow( pos.top + pos.height/2 - offset.top , height, 'top')
       }else if( placement.match(/^top\B/) ){
-    	  $tip.addClass('top');
-    	  this.replaceArrow( 0, height, 'top')
+    	  $tip.addClass('top')
     	  this.replaceArrow( pos.left + pos.width/2 - offset.left, width, 'left')
       }else if( placement.match(/^right\B/) ){
-    	  $tip.addClass('right');
-    	  this.replaceArrow( 0 , width, 'left')
+    	  $tip.addClass('right')
     	  this.replaceArrow( pos.top + pos.height/2 - offset.top , height, 'top')
       }
-
-      /*if (placement == 'top' && actualHeight != height) {
-        offset.top = offset.top + height - actualHeight
-        replace = true
-      }
-
-      if (placement == 'bottom' || placement == 'top') {
-        delta = 0
-
-        if (offset.left < 0){
-          delta = offset.left * -2
-          offset.left = 0
-          $tip.offset(offset)
-          actualWidth = $tip[0].offsetWidth
-          actualHeight = $tip[0].offsetHeight
-        }
-
-        this.replaceArrow(delta - width + actualWidth, actualWidth, 'left')
-      } else {
-        this.replaceArrow(actualHeight - height, actualHeight, 'top')
-      }
-
-      if (replace) $tip.offset(offset)*/
-        
       
     }
   
@@ -318,16 +320,21 @@
   * ======================= */
 
   var old = $.fn.popover
-
-  $.fn.popover = function (option) {
-    return this.each(function () {
-      var $this = $(this)
-        , data = $this.data('popover')
-        , options = typeof option == 'object' && option
-      if (!data) $this.data('popover', (data = new Popover(this, options)))
-      if (typeof option == 'string') data[option]()
-    })
-  }
+  
+  $.fn.popover = function (option, parameter) {
+	    return this.each(function () {
+	      var $this = $(this)
+	        , data = $this.data('popover')
+	        , options = typeof option == 'object' && option
+	      if( !(typeof parameter=='undefined') ){
+	    	  if (typeof option == 'string') data[option](parameter)
+	      }else{
+		      if (!data) $this.data('popover', (data = new Popover(this, options)))
+		      if (typeof option == 'string') data[option]()
+	      }
+	      
+	    })
+	  }
 
   $.fn.popover.Constructor = Popover
 
@@ -338,6 +345,8 @@
   , template: '<div class="popover"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>'
   , centerMargin: 20
   , arrowClass: 'arrow'
+  , titleClass: 'popover-title'
+  , contentClass: 'popover-content'
   })
 
 
