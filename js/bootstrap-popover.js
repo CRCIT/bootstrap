@@ -45,8 +45,10 @@
 
       $tip.find('.' + this.options.titleClass)[this.options.html ? 'html' : 'text'](title)
       $tip.find('.' + this.options.contentClass)[this.options.html ? 'html' : 'text'](content)
-
-      $tip.removeClass('fade top bottom left right bottomRight bottomLeft topRight topLeft leftTop leftBottom rightTop rightBottom in')
+      if ( typeof this.options.buttons=='object' ) {
+    	  $tip.find('.'+ this.options.footerClass).remove()
+    	  $tip.find('.'+ this.options.contentClass).after(this.getButtonsJQuery());
+      }
     }
   
   , changeContent: function (data) {
@@ -61,7 +63,7 @@
 
       this.options.content = data;
     }
-
+  
   , changeTitle: function (data) {
       var $tip = this.tip()
         , title = this.getTitle()
@@ -233,6 +235,44 @@
       
     }
   
+  , hide: function () {
+      var that = this
+        , $tip = this.tip()
+        , e = $.Event('hide')
+
+      this.$element.trigger(e)
+      if (e.isDefaultPrevented()) return
+
+      $tip.removeClass('in')
+
+      function removeWithAnimation() {
+        var timeout = setTimeout(function () {
+          $tip.off($.support.transition.end).detach()
+        }, 500)
+
+        $tip.one($.support.transition.end, function () {
+          clearTimeout(timeout)
+          $tip.detach()
+        })
+      }
+
+      $.support.transition && this.$tip.hasClass('fade') ?
+        removeWithAnimation() :
+        $tip.detach()
+
+	  if(this.options.autohide){
+		  $(this.$element).attr('showingPopover', false); 
+	      clickedAway = false;
+	      $(document).off("click.outPopover"+  $(this.$element).attr('id') );
+	      $(document).off("click.inPopover"+  $(this.$element).attr('id') );
+	  }
+	  $(document).off("click.crossPopover"+  $(this.$element).attr('id') );  
+        
+      this.$element.trigger('hidden')
+
+      return this
+    }
+  
   , show: function () {
       var $tip
         , pos
@@ -247,8 +287,9 @@
         this.$element.trigger(e)
         if (e.isDefaultPrevented()) return
         $tip = this.tip()
+        $tip.removeClass('fade top bottom left right bottomRight bottomLeft topRight topLeft leftTop leftBottom rightTop rightBottom in')
         this.setContent()
-
+        
         if (this.options.animation) {
           $tip.addClass('fade')
         }
@@ -310,11 +351,60 @@
         }
 
         this.applyPlacement(tp, placement)
+        
+        if(this.options.autohide){
+        	$(this.$element).attr('showingPopover', true);
+//          EVENTO DE CLICK EN CUALQUIER ELEMENTO
+          	$(document).on("click.outPopover"+  $(this.$element).attr('id')
+          			       ,{elemento: this.$element}
+          	               , function(event){
+          	            	   if(event.data.elemento.attr("showingpopover") && clickedAway){
+          	            		   event.data.elemento.popover('hide');
+          	            	   } else {
+          	            		   clickedAway = true;
+          	            	   }});		
+//          EVENTO DE CLICK EN EL POPOVER O SUS ELEMENTOS
+            $(document).on("click.inPopover"+ $(this.$element).attr('id'),".popover,#ui-datepicker-div,.ui-corner-all", function(event){
+      			clickedAway=false;
+      		} );
+        }
+        
+        $tip.find('a.close[data-dismiss="popover"]').on('click.crossPopover'+ $(this.$element).attr('id')
+        		                                        ,{elemento: this.$element}
+                                                        , function(event){
+                                                        	event.data.elemento.popover('hide');
+                                                        })
+        
         this.$element.trigger('shown')
       }
     }
-  })
-
+  , getButtonsJQuery: function () {
+	    var $buttons
+	      , $anchor	
+	      , buttons
+	      
+	    $buttons = $('<div></div>').addClass(this.options.footerClass);
+	    
+	    buttons = this.options.buttons
+	    
+	    //for(var button in this.options.buttons){
+    	for(var i=0; i<buttons.length; i++){
+	    	$buttons.append( $anchor = $(this.options.buttonsTemplate) )
+	    	
+	    	for(var attribute in buttons[i]){ //Recorremos los atributos del objeto
+	    		if(!(attribute=='btnClass'||attribute=='name')) $anchor.attr(attribute,buttons[i][attribute])
+	 		}
+	    	
+	    	$anchor.addClass(this.options.buttonsClass)
+	    	
+	    	if (typeof buttons[i].href=='undefined') $anchor.attr('href','#')
+	    	if (typeof buttons[i].btnClass != "undefined") $anchor.addClass(buttons[i].btnClass)
+	    	if (typeof buttons[i].name != "undefined") $anchor.attr('name',buttons[i].name)
+	    }
+	    	
+	    return $buttons
+  }
+})
 
  /* POPOVER PLUGIN DEFINITION
   * ======================= */
@@ -342,11 +432,16 @@
     placement: 'bottom'
   , trigger: 'click'
   , content: ''
-  , template: '<div class="popover"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>'
+  , template: '<div class="popover"><div class="arrow"></div><a class="close" data-dismiss="popover">×</a><h3 class="popover-title"></h3><div class="popover-content"></div></div>'
   , centerMargin: 20
   , arrowClass: 'arrow'
   , titleClass: 'popover-title'
   , contentClass: 'popover-content'
+  , footerClass: 'popover-footer'
+  , buttons: ''
+  , buttonsTemplate: '<a></a>'
+  , buttonsClass: 'btn'
+  , autohide : true
   })
 
 
@@ -359,3 +454,5 @@
   }
 
 }(window.jQuery);
+
+var clickedAway = false;
